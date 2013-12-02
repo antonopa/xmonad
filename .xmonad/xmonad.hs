@@ -14,6 +14,7 @@ import System.Exit
 import qualified XMonad.StackSet as W
 import qualified Data.Map        as M
 import XMonad.Util.EZConfig
+import XMonad.Hooks.ManageDocks
 import XMonad.Layout.IndependentScreens
 import XMonad.Actions.UpdatePointer
 
@@ -52,7 +53,7 @@ myModMask       = mod4Mask
 --
 -- > workspaces = ["web", "irc", "code" ] ++ map show [4..9]
 --
-workspacesList = ["web", "terms", "terms", "more terms" ] ++ map show [ 5..9 ] ++ [ "0", "-", "+", "=" ]
+workspacesList = (["web", "terms", "terms" ] ++ map show [ 3..9 ]) -- ++ [ "0", "-", "+", "=" ])
 getWorkspaces x = if x > 1 
            then withScreens x workspacesList
 	   else workspacesList
@@ -241,7 +242,6 @@ myEventHook = mempty
 -- Perform an arbitrary action on each internal state change or X event.
 -- See the 'XMonad.Hooks.DynamicLog' extension for examples.
 --
-myLogHook = return ()
 
 ------------------------------------------------------------------------
 -- Startup hook
@@ -277,13 +277,27 @@ main = do
         mouseBindings      = myMouseBindings,
 
       -- hooks, layouts
-        layoutHook         = myLayout,
+        layoutHook         = avoidStruts $ myLayout,
         manageHook         = myManageHook,
         handleEventHook    = myEventHook,
-        logHook            = myLogHook,
+        logHook            = mapM_ dynamicLogWithPP $ zipWith pp hs [ 0..nScreens ],
         startupHook        = myStartupHook
     } 
 
 xmobarCommand (S s) = unwords ["xmobar", "-x", show s, "-t", template s ] where
 	template 0 = "%StdinReader%"
 	template _ = "%date%%StdinReader%"
+
+bright = "#80c0ff"
+dark   = "#13294e"
+
+pp h s = marshallPP s defaultPP {
+    ppCurrent           = color "white",
+    ppVisible           = color "white",
+    ppHiddenNoWindows   = color dark,
+    ppUrgent            = color "red",
+    ppSep               = "",
+    ppOrder             = \(wss:layout:title:_) -> ["\NUL", title, "\NUL", wss],
+    ppOutput            = hPutStrLn h
+    }
+    where color c = xmobarColor c ""
