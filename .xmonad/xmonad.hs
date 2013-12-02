@@ -17,6 +17,8 @@ import XMonad.Util.EZConfig
 import XMonad.Layout.IndependentScreens
 import XMonad.Actions.UpdatePointer
 
+import XMonad.Hooks.DynamicLog
+import XMonad.Util.Run
 -- The preferred terminal program, which is used in a binding below and by
 -- certain contrib modules.
 --
@@ -50,7 +52,10 @@ myModMask       = mod4Mask
 --
 -- > workspaces = ["web", "irc", "code" ] ++ map show [4..9]
 --
-myWorkspaces    = withScreens 2 ["1","2","3","4","5","6","7","8","9", "0", "-", "=" ]
+workspacesList = ["web", "terms", "terms", "more terms" ] ++ map show [ 5..9 ] ++ [ "0", "-", "+", "=" ]
+getWorkspaces x = if x > 1 
+           then withScreens x workspacesList
+	   else workspacesList
 
 -- Border colors for unfocused and focused windows, respectively.
 --
@@ -141,8 +146,7 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     -- mod-shift-[1..9], Move client to workspace N
     --
     [((m .|. modm, k), windows $ onCurrentScreen f i)
-        | (i, k) <- zip (XMonad.workspaces conf) [xK_1 .. xK_9]
-        {-, (f, m) <- [(W.View, 0), (W.shift, shiftMask)]]-}
+        | (i, k) <- zip (workspaces' conf) [xK_1 .. xK_9]
 	, (f, m) <- [(W.greedyView, 0), (W.shift, shiftMask)]]
     ++
 
@@ -254,22 +258,17 @@ myStartupHook = return ()
 
 -- Run xmonad with the settings you specify. No need to modify this.
 --
-main = xmonad defaults
-
--- A structure containing your configuration settings, overriding
--- fields in the default config. Any you don't override, will
--- use the defaults defined in xmonad/XMonad/Config.hs
---
--- No need to modify this.
---
-defaults = defaultConfig {
+main = do
+	nScreens <- countScreens
+	hs	 <- mapM (spawnPipe . xmobarCommand) [ 0 .. nScreens - 1 ]
+ 	xmonad $ defaultConfig {
       -- simple stuff
         terminal           = myTerminal,
         focusFollowsMouse  = myFocusFollowsMouse,
         clickJustFocuses   = myClickJustFocuses,
         borderWidth        = myBorderWidth,
         modMask            = myModMask,
-        workspaces         = myWorkspaces,
+        workspaces         = getWorkspaces nScreens,
         normalBorderColor  = myNormalBorderColor,
         focusedBorderColor = myFocusedBorderColor,
 
@@ -283,4 +282,8 @@ defaults = defaultConfig {
         handleEventHook    = myEventHook,
         logHook            = myLogHook,
         startupHook        = myStartupHook
-    }
+    } 
+
+xmobarCommand (S s) = unwords ["xmobar", "-x", show s, "-t", template s ] where
+	template 0 = "%StdinReader%"
+	template _ = "%date%%StdinReader%"
