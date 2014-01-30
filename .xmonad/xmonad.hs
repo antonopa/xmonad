@@ -17,6 +17,9 @@ import XMonad.Util.EZConfig
 import XMonad.Hooks.ManageDocks
 import XMonad.Layout.IndependentScreens
 import XMonad.Actions.UpdatePointer
+import XMonad.Layout.Fullscreen
+import XMonad.Layout.NoBorders
+import XMonad.Hooks.ManageHelpers
 
 import XMonad.Hooks.DynamicLog
 import XMonad.Util.Run
@@ -54,9 +57,7 @@ myModMask       = mod4Mask
 -- > workspaces = ["web", "irc", "code" ] ++ map show [4..9]
 --
 workspacesList = (["web", "terms", "terms" ] ++ map show [ 3..9 ]) -- ++ [ "0", "-", "+", "=" ])
-getWorkspaces x = if x > 1 
-           then withScreens x workspacesList
-	   else workspacesList
+getWorkspaces x = withScreens x workspacesList
 
 -- Border colors for unfocused and focused windows, respectively.
 --
@@ -112,6 +113,9 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
 
     -- Shrink the master area
     , ((modm,               xK_h     ), sendMessage Shrink)
+    
+    -- Toggle the keyboard layout
+    , ((modm .|. shiftMask, xK_period ), spawn "~/bin/toggle.layout")
 
     -- Expand the master area
     , ((modm,               xK_l     ), sendMessage Expand)
@@ -222,6 +226,10 @@ myLayout = tiled ||| Mirror tiled ||| Full
 myManageHook = composeAll
     [ className =? "MPlayer"        --> doFloat
     , className =? "Gimp"           --> doFloat
+    , className =? "bdm-eye"        --> doFloat
+    , className =? "buzzer"         --> doFloat
+    , className =? "plugin-container" --> doFloat
+    , isFullscreen --> doFullFloat
     , resource  =? "desktop_window" --> doIgnore
     , resource  =? "kdesktop"       --> doIgnore ]
 
@@ -277,7 +285,7 @@ main = do
         mouseBindings      = myMouseBindings,
 
       -- hooks, layouts
-        layoutHook         = avoidStruts $ myLayout,
+        layoutHook         = smartBorders . avoidStruts $ myLayout,
         manageHook         = myManageHook,
         handleEventHook    = myEventHook,
         logHook            = mapM_ dynamicLogWithPP $ zipWith pp hs [ 0..nScreens ],
@@ -297,7 +305,7 @@ pp h s = marshallPP s defaultPP {
     ppHiddenNoWindows   = color dark,
     ppUrgent            = color "red",
     ppSep               = "",
-    ppOrder             = \(wss:layout:title:_) -> ["\NUL", title, "\NUL", wss],
+    ppOrder             = \(wss:layout:title:_) -> [" -- ", title, " -- ", wss],
     ppOutput            = hPutStrLn h
     }
     where color c = xmobarColor c ""
