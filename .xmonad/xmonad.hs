@@ -20,9 +20,15 @@ import XMonad.Actions.UpdatePointer
 import XMonad.Layout.Fullscreen
 import XMonad.Layout.NoBorders
 import XMonad.Hooks.ManageHelpers
+import XMonad.Hooks.SetWMName
 
 import XMonad.Hooks.DynamicLog
 import XMonad.Util.Run
+
+import XMonad.Util.EZConfig (mkKeymap)
+
+import XMonad.Hooks.EwmhDesktops (ewmhDesktopsStartup)
+
 -- The preferred terminal program, which is used in a binding below and by
 -- certain contrib modules.
 --
@@ -64,6 +70,14 @@ getWorkspaces x = withScreens x workspacesList
 myNormalBorderColor  = "#333333"
 myFocusedBorderColor = "#ffffff"
 
+myComboKeys :: [ (String, X()) ]
+myComboKeys = 
+    [ ("M-c r", spawn "~/bin/p.spotify -d -x"),
+      ("M-c p", spawn "~/bin/p.spotify -d -p"),
+      ("M-c n", spawn "~/bin/p.spotify -n"),
+      ("M-c b", spawn "~/bin/p.spotify -b"),
+      ("M-z l", spawn "xlock")
+    ]
 ------------------------------------------------------------------------
 -- Key bindings. Add, modify or remove key bindings here.
 --
@@ -226,8 +240,12 @@ myLayout = tiled ||| Mirror tiled ||| Full
 myManageHook = composeAll
     [ className =? "MPlayer"        --> doFloat
     , className =? "Gimp"           --> doFloat
+    , className =? "wync"           --> doFloat
+    , className =? "Wync"           --> doFloat
     , className =? "bdm-eye"        --> doFloat
     , className =? "buzzer"         --> doFloat
+    , className =? "trayer"         --> doIgnore
+    --, className =? "Thunderbird"    --> doShift (workspaceList !! 9)
     , className =? "plugin-container" --> doFloat
     , isFullscreen --> doFullFloat
     , resource  =? "desktop_window" --> doIgnore
@@ -259,7 +277,7 @@ myEventHook = mempty
 -- per-workspace layout choices.
 --
 -- By default, do nothing.
-myStartupHook = return ()
+-- myStartupHook = return ()
 
 ------------------------------------------------------------------------
 -- Now run xmonad with all the defaults we set up.
@@ -281,7 +299,7 @@ main = do
         focusedBorderColor = myFocusedBorderColor,
 
       -- key bindings
-        keys               = myKeys,
+        keys               = \c -> myKeys c `M.union` mkKeymap c myComboKeys,
         mouseBindings      = myMouseBindings,
 
       -- hooks, layouts
@@ -289,7 +307,7 @@ main = do
         manageHook         = myManageHook,
         handleEventHook    = myEventHook,
         logHook            = mapM_ dynamicLogWithPP $ zipWith pp hs [ 0..nScreens ],
-        startupHook        = myStartupHook
+        startupHook        = ewmhDesktopsStartup >> setWMName "LG3D"
     } 
 
 xmobarCommand (S s) = unwords ["xmobar", "-x", show s, "-t", template s ] where
