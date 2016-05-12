@@ -1,34 +1,36 @@
---
--- xmonad example config file.
---
--- A template showing all available configuration hooks,
--- and how to override the defaults in your own xmonad.hs conf file.
---
--- Normally, you'd only override those defaults you care about.
---
+import System.IO
+import System.Exit
 
 import XMonad
 import Data.Monoid
 import System.Exit
 
-import qualified XMonad.StackSet as W
-import qualified Data.Map        as M
 import XMonad.Util.EZConfig
 import XMonad.Hooks.ManageDocks
 import XMonad.Layout.IndependentScreens
 import XMonad.Actions.UpdatePointer
 import XMonad.Layout.Fullscreen
 import XMonad.Layout.NoBorders
+import XMonad.Layout.PerWorkspace
+import XMonad.Layout.IM
+import XMonad.Layout.Grid
+import XMonad.Layout.Spacing
+import XMonad.Layout.ThreeColumns
+import XMonad.Layout.LayoutCombinators hiding ( (|||) )
+
 import XMonad.Hooks.ManageHelpers
 import XMonad.Hooks.SetWMName
 
+import XMonad.Actions.WindowBringer
+
 import XMonad.Hooks.DynamicLog
-import XMonad.Util.Run
+import XMonad.Util.Run(spawnPipe)
 
 import XMonad.Util.EZConfig (mkKeymap)
-
 import XMonad.Hooks.EwmhDesktops (ewmhDesktopsStartup)
 
+import qualified XMonad.StackSet as W
+import qualified Data.Map        as M
 -- The preferred terminal program, which is used in a binding below and by
 -- certain contrib modules.
 --
@@ -44,7 +46,7 @@ myClickJustFocuses = False
 
 -- Width of the window border in pixels.
 --
-myBorderWidth   = 1
+myBorderWidth   = 2
 
 -- modMask lets you specify which modkey you want to use. The default
 -- is mod1Mask ("left alt").  You may also consider using mod3Mask
@@ -62,21 +64,28 @@ myModMask       = mod4Mask
 --
 -- > workspaces = ["web", "irc", "code" ] ++ map show [4..9]
 --
-workspacesList = (["web", "terms", "terms" ] ++ map show [ 3..9 ]) -- ++ [ "0", "-", "+", "=" ])
+workspacesList = (map show [ 1..9 ]) -- ++ [ "0", "-", "+", "=" ])
 getWorkspaces x = withScreens x workspacesList
 
 -- Border colors for unfocused and focused windows, respectively.
 --
-myNormalBorderColor  = "#333333"
-myFocusedBorderColor = "#ffffff"
+myNormalBorderColor  = "#A22"
+myFocusedBorderColor = "#2A2"
 
 myComboKeys :: [ (String, X()) ]
-myComboKeys = 
-    [ ("M-c r", spawn "~/bin/p.spotify -d -x"),
-      ("M-c p", spawn "~/bin/p.spotify -d -p"),
+myComboKeys =
+    [ ("M-c r", spawn "~/bin/p.spotify -d --pause"),
+      ("M-c p", spawn "~/bin/p.spotify -d --play"),
       ("M-c n", spawn "~/bin/p.spotify -n"),
       ("M-c b", spawn "~/bin/p.spotify -b"),
-      ("M-z l", spawn "xlock")
+      ("M-c s", spawn "~/bin/p.spotify -s"),
+      ("M-c l", spawn "/usr/bin/spotify"),
+      ("M-z l", spawn "xscreensaver-command -lock"),
+      ("M-z 7", spawn "virtualbox --startvm W7"),
+      ("M-z f", spawn "firefox"),
+      ("M-z o", spawn "poweroff"),
+      ("M-z r", spawn "reboot"),
+      ("M-z m", spawn "pactl set-sink-mute 0 toggle")
     ]
 ------------------------------------------------------------------------
 -- Key bindings. Add, modify or remove key bindings here.
@@ -127,7 +136,7 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
 
     -- Shrink the master area
     , ((modm,               xK_h     ), sendMessage Shrink)
-    
+
     -- Toggle the keyboard layout
     , ((modm .|. shiftMask, xK_period ), spawn "~/bin/toggle.layout")
 
@@ -149,6 +158,7 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     --
     -- , ((modm              , xK_b     ), sendMessage ToggleStruts)
 
+    , ((modm .|. shiftMask, xK_g     ), gotoMenu)
     -- Quit xmonad
     , ((modm .|. shiftMask, xK_q     ), io (exitWith ExitSuccess))
 
@@ -157,6 +167,14 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
 
     -- Run xmessage with a summary of the default keybindings (useful for beginners)
     {-, ((modMask .|. shiftMask, xK_slash ), spawn ("echo \"" ++ help ++ "\" | xmessage -file -"))-}
+
+    -- TwoPane layout for 4k Monitor
+    -- , ((modm .|. shiftMask, xK_b     ), layoutScreens 2 (TwoPane 0.8 0.2))
+    , ((modm .|. controlMask .|. shiftMask, xK_r ), rescreen)
+    -- Increase/Decrease the volume
+    , ((modm .|. shiftMask, xK_Up), spawn "pactl set-sink-volume 0 +5%")
+    , ((modm .|. shiftMask, xK_Down), spawn "pactl set-sink-volume 0 -5%")
+    -- XF86AudioMute toggle
     ]
     ++
 
@@ -166,7 +184,7 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     --
     [((m .|. modm, k), windows $ onCurrentScreen f i)
         | (i, k) <- zip (workspaces' conf) [xK_1 .. xK_9]
-	, (f, m) <- [(W.greedyView, 0), (W.shift, shiftMask)]]
+        , (f, m) <- [(W.greedyView, 0), (W.shift, shiftMask)]]
     ++
 
     --
@@ -197,6 +215,14 @@ myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList $
     -- you may also bind events to the mouse scroll wheel (button4 and button5)
     ]
 
+-- Color of current window title in xmobar.
+xmobarTitleColor = "#FFB6B0"
+
+-- Color of current workspace in xmobar.
+xmobarCurrentWorkspaceColor = "#CEFFAC"
+
+-- custom launcher
+myLauncher = "$(~/.cabal/bin/yeganesh -x -- -nb '#000' -nf '#f00' -sb '#a00' -sf '#111'  -p 'What?: ')"
 ------------------------------------------------------------------------
 -- Layouts:
 
@@ -208,19 +234,12 @@ myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList $
 -- The available layouts.  Note that each layout is separated by |||,
 -- which denotes layout choice.
 --
-myLayout = tiled ||| Mirror tiled ||| Full
+myLayout = nob ||| avoidStruts nob ||| fullavoid ||| avoidStruts pidginLayout
   where
-     -- default tiling algorithm partitions the screen into two panes
-     tiled   = Tall nmaster delta ratio
-
-     -- The default number of windows in the master pane
-     nmaster = 1
-
-     -- Default proportion of screen occupied by master pane
-     ratio   = 1/2
-
-     -- Percent of screen to increment by when resizing panes
-     delta   = 3/100
+     nob = noBorders (fullscreenFull Full)
+     fullavoid = avoidStruts (Full)
+     gridLayout = spacing 8 $ Grid
+     pidginLayout = withIM (18/100) (Role "buddy_list") gridLayout
 
 ------------------------------------------------------------------------
 -- Window rules:
@@ -239,15 +258,13 @@ myLayout = tiled ||| Mirror tiled ||| Full
 --
 myManageHook = composeAll
     [ className =? "MPlayer"        --> doFloat
+    , className =? "gvim"           --> doFloat
+    , className =? "Gvim"           --> doFloat
     , className =? "Gimp"           --> doFloat
-    , className =? "wync"           --> doFloat
-    , className =? "Wync"           --> doFloat
-    , className =? "bdm-eye"        --> doFloat
-    , className =? "buzzer"         --> doFloat
-    , className =? "trayer"         --> doIgnore
-    --, className =? "Thunderbird"    --> doShift (workspaceList !! 9)
+    , className =? "stalonetray"    --> doIgnore
+    , className =? "Pavucontrol"    --> doFloat
     , className =? "plugin-container" --> doFloat
-    , isFullscreen --> doFullFloat
+    , isFullscreen                  --> doFullFloat
     , resource  =? "desktop_window" --> doIgnore
     , resource  =? "kdesktop"       --> doIgnore ]
 
@@ -284,46 +301,47 @@ myEventHook = mempty
 
 -- Run xmonad with the settings you specify. No need to modify this.
 --
+-- hs    <- mapM (spawnPipe . xmobarCommand) [ 0 .. nScreens - 1 ]
 main = do
-	nScreens <- countScreens
-	hs	 <- mapM (spawnPipe . xmobarCommand) [ 0 .. nScreens - 1 ]
- 	xmonad $ defaultConfig {
+    nScreens <- countScreens
+
+    hs   <- mapM (spawnPipe . xmobarCommand) [ 0 .. nScreens - 1 ]
+
+    xmonad $ defaultConfig {
       -- simple stuff
-        terminal           = myTerminal,
-        focusFollowsMouse  = myFocusFollowsMouse,
-        clickJustFocuses   = myClickJustFocuses,
-        borderWidth        = myBorderWidth,
-        modMask            = myModMask,
-        workspaces         = getWorkspaces nScreens,
-        normalBorderColor  = myNormalBorderColor,
-        focusedBorderColor = myFocusedBorderColor,
+      terminal           = myTerminal,
+      focusFollowsMouse  = myFocusFollowsMouse,
+      clickJustFocuses   = myClickJustFocuses,
+      borderWidth        = myBorderWidth,
+      modMask            = myModMask,
+      workspaces         = getWorkspaces nScreens,
+      normalBorderColor  = myNormalBorderColor,
+      focusedBorderColor = myFocusedBorderColor,
 
       -- key bindings
-        keys               = \c -> myKeys c `M.union` mkKeymap c myComboKeys,
-        mouseBindings      = myMouseBindings,
+      keys               = \c -> myKeys c `M.union` mkKeymap c myComboKeys,
+      mouseBindings      = myMouseBindings,
 
       -- hooks, layouts
-        layoutHook         = smartBorders . avoidStruts $ myLayout,
-        manageHook         = myManageHook,
-        handleEventHook    = myEventHook,
-        logHook            = mapM_ dynamicLogWithPP $ zipWith pp hs [ 0..nScreens ],
-        startupHook        = ewmhDesktopsStartup >> setWMName "LG3D"
-    } 
+      layoutHook         = myLayout,
+      manageHook         = myManageHook <+> manageDocks,
+      handleEventHook    = myEventHook,
+      logHook            = mapM_ dynamicLogWithPP $ zipWith pp hs [ 0..nScreens ],
+      startupHook        = ewmhDesktopsStartup >> setWMName "LG3D"
+    }
 
-xmobarCommand (S s) = unwords ["xmobar", "-x", show s, "-t", template s ] where
-	template 0 = "%StdinReader%"
-	template _ = "%date%%StdinReader%"
+-- xmobarCommand (S s) = unwords ["xmobar", "-x", show s, "-t", template s, "-c", config s ] where
+xmobarCommand (S s) = unwords ["xmobar", "-x", show s, "~/.xmonad/xmobar.hs" ]
 
 bright = "#80c0ff"
 dark   = "#13294e"
 
 pp h s = marshallPP s defaultPP {
-    ppCurrent           = color "white",
-    ppVisible           = color "white",
-    ppHiddenNoWindows   = color dark,
-    ppUrgent            = color "red",
-    ppSep               = "",
-    ppOrder             = \(wss:layout:title:_) -> [" -- ", title, " -- ", wss],
+    ppCurrent           = xmobarColor xmobarCurrentWorkspaceColor "",
+    ppTitle             = xmobarColor xmobarTitleColor "" . shorten 100,
+    ppVisible           = xmobarColor "white" "",
+    ppHiddenNoWindows   = xmobarColor dark "",
+    ppUrgent            = xmobarColor "red" "",
+    ppSep               = "  ",
     ppOutput            = hPutStrLn h
-    }
-    where color c = xmobarColor c ""
+}
