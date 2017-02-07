@@ -138,7 +138,7 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     , ((modm,               xK_h     ), sendMessage Shrink)
 
     -- Toggle the keyboard layout
-    , ((modm .|. shiftMask, xK_period ), spawn "~/bin/toggle.layout")
+    , ((modm .|. shiftMask, xK_period ), spawn "~/bin/toggle")
 
     -- Expand the master area
     , ((modm,               xK_l     ), sendMessage Expand)
@@ -234,12 +234,14 @@ myLauncher = "$(~/.cabal/bin/yeganesh -x -- -nb '#000' -nf '#f00' -sb '#a00' -sf
 -- The available layouts.  Note that each layout is separated by |||,
 -- which denotes layout choice.
 --
-myLayout = nob ||| avoidStruts nob ||| fullavoid ||| avoidStruts pidginLayout
+myLayout = nob ||| avoidStruts tiledA ||| Mirror tiledA ||| avoidStruts nob
   where
      nob = noBorders (fullscreenFull Full)
      fullavoid = avoidStruts (Full)
-     gridLayout = spacing 8 $ Grid
-     pidginLayout = withIM (18/100) (Role "buddy_list") gridLayout
+     tiledA = Tall nmaster delta ratio
+     nmaster = 1
+     ratio = 1/2
+     delta = 3/100
 
 ------------------------------------------------------------------------
 -- Window rules:
