@@ -7,7 +7,7 @@ Config {
     font = "xft:Fixed-8",
     bgColor = "#222",
     fgColor = "#aaa",
-    position = Static { xpos = 0, ypos = 0, width = 1888, height = 16 },
+    position = Static { xpos = 0, ypos = 0, width = 2530, height = 16 },
     lowerOnStart = True,
     commands = [
         Run Weather "ETGU" ["-t","<tempC>° <skyCondition>","-L","64","-H","77","-n","#CEFFAC","-h","#FFB6B0","-l","#96CBFE"] 3600,

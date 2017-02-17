@@ -80,7 +80,7 @@ myComboKeys =
       ("M-c b", spawn "~/bin/p.spotify -b"),
       ("M-c s", spawn "~/bin/p.spotify -s"),
       ("M-c l", spawn "/usr/bin/spotify"),
-      ("M-z l", spawn "xscreensaver-command -lock"),
+      ("M-z l", spawn "gnome-screensaver-command -l"),
       ("M-z 7", spawn "virtualbox --startvm W7"),
       ("M-z f", spawn "firefox"),
       ("M-z o", spawn "poweroff"),
@@ -140,6 +140,8 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     -- Toggle the keyboard layout
     , ((modm .|. shiftMask, xK_period ), spawn "~/bin/toggle")
 
+    -- Try to float a term
+    , ((modm .|. shiftMask, xK_t ), spawn "/usr/bin/terminator -T floater")
     -- Expand the master area
     , ((modm,               xK_l     ), sendMessage Expand)
 
@@ -234,7 +236,7 @@ myLauncher = "$(~/.cabal/bin/yeganesh -x -- -nb '#000' -nf '#f00' -sb '#a00' -sf
 -- The available layouts.  Note that each layout is separated by |||,
 -- which denotes layout choice.
 --
-myLayout = nob ||| avoidStruts tiledA ||| Mirror tiledA ||| avoidStruts nob
+myLayout = nob ||| avoidStruts nob ||| avoidStruts tiledA ||| Mirror tiledA
   where
      nob = noBorders (fullscreenFull Full)
      fullavoid = avoidStruts (Full)
@@ -259,14 +261,17 @@ myLayout = nob ||| avoidStruts tiledA ||| Mirror tiledA ||| avoidStruts nob
 -- 'className' and 'resource' are used below.
 --
 myManageHook = composeAll
-    [ className =? "MPlayer"        --> doFloat
+    [ className =? "Eclipse"        --> doShift "1"
+    , className =? "MPlayer"        --> doFloat
     , className =? "gvim"           --> doFloat
     , className =? "Gvim"           --> doFloat
     , className =? "Gimp"           --> doFloat
+    , className =? "Pidgin"         --> doFloat
     , className =? "stalonetray"    --> doIgnore
     , className =? "Pavucontrol"    --> doFloat
     , className =? "plugin-container" --> doFloat
     , isFullscreen                  --> doFullFloat
+    , title     =? "floater"        --> doFloat
     , resource  =? "desktop_window" --> doIgnore
     , resource  =? "kdesktop"       --> doIgnore ]
 
